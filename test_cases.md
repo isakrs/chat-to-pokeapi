@@ -2,8 +2,14 @@ test_cases
 
 max reponse time should be 5 seconds.
 
-Q: How many pokemons exists?
-A: More than 1000.
+Q: Give me some stats on Pichatou
+A: Should be some statistics on Picatou
+
+Q: Give me some stats on Usain Bolt
+A: Should be answer saying that this is not a relevant question for the API
+
+Q: How many pokemons are there?
+A: There are 1302. Make sure this number is in the answer.
 
 Q: What are the names of the characters in Star Wars?
 A: It should be a polite answer and it should be clear that this is not a pokemon related question.
