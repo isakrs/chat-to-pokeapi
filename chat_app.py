@@ -22,7 +22,9 @@ def call_api(data):
 
 
 def gpt_q1(question):
-    """Q1: Is this a question that can be answered with {API_NAME}? Question: \n\n {question} \n\n. Answer yes or no."""
+    """Q1: Is possible to use any information from the {API_NAME} to answer this question? 
+    
+    Question: \n\n {question} \n\n. Answer yes or no."""
     data = {
         "messages": [
             {
@@ -35,7 +37,8 @@ def gpt_q1(question):
             {
                 "role": "user", 
                 "content": (
-                    f"Is this a question that can be answered with {API_NAME}? Question: \n\n {question} \n\n. "
+                    f"Is possible to use any information from the {API_NAME} to answer this question? "
+                    f"Question: \n\n {question} \n\n. "
                     "Answer strictly yes or no"
                 )
             }
@@ -213,10 +216,10 @@ def q1_yes_q2_api_q3_api_q4(question, endpoints, responses):
             {
                 "role": "user", 
                 "content": (
-                    f"Based on the user's original question: \n\n {question} \n\n"
-                    f"and the response(s) from {API_NAME}: \n\n"
+                    f"Based {API_NAME}'s endpoints and corresponding responses: \n\n"
                     f"{[(e, r) for e,r in zip(endpoints, responses)]} \n\n"
-                    "please answer the user in a fun and polite tone."
+                    f"and the user's original question: \n\n {question} \n\n"
+                    "please answer the user's question in a fun and polite tone."
                 )
             }
         ]
@@ -242,6 +245,7 @@ def handle_query(question):
 
     # Determine if the question can be answered using the API
     is_api_question, data = gpt_q1(question)
+    history.append({"gpt-data": data})
     if not is_api_question:
         # Handle no response, which is a fun and polite message about it not being an API question
         answer, data = gpt_q1_no_q2(question)
