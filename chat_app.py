@@ -17,8 +17,11 @@ gpt_api_url = os.getenv("API_URL")
 
 def call_api(data):
     headers = {"Content-Type": "application/json", "api-key": gpt_api_key}
-    response = requests.post(gpt_api_url, headers=headers, json=data)
-    return response.json()
+    try:
+        response = requests.post(gpt_api_url, headers=headers, json=data)
+        return response.json()
+    except requests.exceptions.ConnectionError as e:
+        return None
 
 
 def gpt_q1(question):
@@ -47,6 +50,10 @@ def gpt_q1(question):
     response = call_api(data)
     
     # TODO: check if response is valid. if not, append system's answer to data messages and ask one more time for a valid answer.
+    
+    # Error handling, no response
+    if response is None:
+        return False, data
     
     is_api_question = response["choices"][0]["message"]["content"].strip().lower() == "yes"
 
@@ -88,6 +95,17 @@ def gpt_q1_no_q2(question):
         ]
     }
     response = call_api(data)
+
+    # Error handling, no response
+    if response is None:
+        answer = (
+            "I'm sorry, I don't have an answer for that. "
+            "There was no response from the API. "
+            "Please come back later. "
+            "Thank you for your understanding."
+        )
+        return answer, data
+
     new_message = {
         "role": "assistant",
         "content": response["choices"][0]["message"]["content"]
