@@ -129,13 +129,11 @@ The system is equipped to handle various errors, such as:
 - API connection issues, providing clear error messages to the user.
 - Handling unexpected input gracefully by informing users about the types of questions they can ask.
 
-## Documentation
+## Project Files Description
 
-The project is fully documented, including:
-
-- Code comments explaining critical sections of the logic.
-- Usage instructions in this README.
-- Detailed error handling strategies.
+- **notes_to_self.md**: Contains technical improvement ideas and considerations for future enhancements of the NLP model and API interaction.
+- **gpt_questions.md**: Documents the structure of question flows in the application, detailing how natural language queries are processed and translated into API requests.
+- **test_cases.md**: Lists test cases used to ensure the application meets performance expectations and correctly handles both successful and failing query scenarios.
 
 ## Contributions
 
