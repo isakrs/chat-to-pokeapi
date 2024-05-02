@@ -31,26 +31,30 @@ A: No, it did not fit with an API request.
 Q: Could you tell a joke about picatou?
 A: No, it did not fit with an API request. Note the wrong name in the question.
 
+Q: Tell me something about two different pokemons
+A: Explaining the API
+
 #### Failing questions
 
 Q: What are Pikachu's abilities?
 A: Should give some abilities.
-Currently: KeyError. However, it is actually failing due to too big max_tokens
+Currently: It is actually failing due to too big max_tokens.
+Error handled.
 
 Q: Give me some stats on Pikachu
 A: Should have more than 3 numerical details
 Currently: failing due to too large response
+Error handled.
 
 Q: Pichatou or something is a name of a pokemon. What is the real name and can you tell me something about this pokemon?
 A: Should provide some statics on Picatou and the correct name of this pokemon, Pikachu.
-Currently: failing, JSONDecodeError. Unsure why yet.
+Currently: failing due to too large response
+Error handled.
 
 Q: Tell me something about two pokemons
 A: Make sure you get the name of two pokemons and some information on both of them
-Currently: failing, line 139
+Currently: failing, believes two is a name and uses that in the query
+Error handled.
 
-Q1: Give me some stats on Pikachu
-A1: Should have more than 3 numerical details
-Q2: What is iconic sound?
-A2: Should sound should be described
-Currently: History functionality is yet not written
+Q: The API is down or wrong url
+Error handled.
