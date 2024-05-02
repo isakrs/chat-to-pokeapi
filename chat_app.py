@@ -90,7 +90,10 @@ def gpt_q1_no_q2(question):
             },
             {
                 "role": "user",
-                "content": "Please answer in a fun and polite tone that this is a not an API related question."
+                "content": (
+                    "Please answer in a fun and helpful tone that this is a not an API related question "
+                    "in the user's original language. "
+                )
             }
         ]
     }
@@ -189,7 +192,8 @@ def q1_yes_q2_api_q3(question, endpoints, responses):
                     f"Based {API_NAME}'s endpoints and corresponding responses: \n\n"
                     f"{[(e, r) for e,r in zip(endpoints, responses)]} \n\n"
                     f"and the user's original question: \n\n {question} \n\n"
-                    "please answer the user's question in a fun and polite tone."
+                    "please answer the user's question in a fun and polite tone "
+                    "in the users original language."
                 )
             }
         ]
