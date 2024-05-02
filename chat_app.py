@@ -263,14 +263,14 @@ def handle_query(question):
     responses = get_endpoints(endpoints)
     history.append({"api-responses": responses})
 
-    # Check if additional endpoints are needed after initial response
-    additional_endpoints, data = gpt_q1_yes_q2_api_q3(question, endpoints, responses)
-    history.append({"gpt-data": data})
-    if additional_endpoints:
-        more_responses = get_endpoints(additional_endpoints)
-        history.append({"api-responses": more_responses})
-        endpoints.extend(additional_endpoints) # Append additional endpoints
-        responses.extend(more_responses)  # Append additional responses
+    # # Check if additional endpoints are needed after initial response
+    # additional_endpoints, data = gpt_q1_yes_q2_api_q3(question, endpoints, responses)
+    # history.append({"gpt-data": data})
+    # if additional_endpoints:
+    #     more_responses = get_endpoints(additional_endpoints)
+    #     history.append({"api-responses": more_responses})
+    #     endpoints.extend(additional_endpoints) # Append additional endpoints
+    #     responses.extend(more_responses)  # Append additional responses
 
     # Final interaction based on all collected data
     final_answer, data = q1_yes_q2_api_q3_api_q4(question, endpoints, responses)
