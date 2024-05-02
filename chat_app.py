@@ -157,7 +157,14 @@ def get_endpoints(endpoints):
     responses = []
     for e in endpoints:
         r = requests.get(e)
-        responses.append(r.json())
+        if r.status_code != 200:
+            response = {
+                "status_code": r.status_code,
+                "text": r.text
+            }
+            responses.append(response)
+        else:
+            responses.append(r.json())
     return responses
 
 
@@ -189,6 +196,23 @@ def q1_yes_q2_api_q3(question, endpoints, responses):
     }
     response = call_api(data)
 
+    # Error handling: the payload to GPT is too long
+    # this happens when the response from the API is too long
+    if response.get("error", {}).get("code") == 'context_length_exceeded':
+        new_message = {
+            "role": "assistant",
+            "content": response["error"]["message"]
+        }
+        data["messages"].append(new_message)
+        answer = (
+            "I'm sorry, I don't have an answer for that. "
+            f"The response from the {API_NAME} was too long. "
+            "Please try asking a different question. "
+            "In the future, I hope to be able to handle this better. "
+            "Thank you for your understanding."
+        )
+        return answer, data
+
     new_message = {
         "role": "assistant",
         "content": response["choices"][0]["message"]["content"]
@@ -203,38 +227,34 @@ def q1_yes_q2_api_q3(question, endpoints, responses):
 def handle_query(question):
     """Handle the user's query."""
     # Append the user's question to the history
-    history = []
-    history.append({"question": question})
+    st.session_state["history"] = []
+    st.session_state["history"].append({"question": question})
 
     # Determine if the question can be answered using the API
     is_api_question, data = gpt_q1(question)
-    history.append({"gpt-data": data})
+    st.session_state["history"].append({"gpt-data": data})
     if not is_api_question:
         # Handle no response, which is a fun and polite message about it not being an API question
         answer, data = gpt_q1_no_q2(question)
-        history.append({"gpt-data": data})
+        st.session_state["history"].append({"gpt-data": data})
         
         # Append the answer to the history
-        history.append({"answer": answer})
-        st.session_state["history"] = history
+        st.session_state["history"].append({"answer": answer})
 
         return answer
 
     # Get the necessary endpoints to call if it's an API question
     endpoints, data = gpt_q1_yes_q2(question)
-    history.append({"gpt-data": data})
+    st.session_state["history"].append({"gpt-data": data})
     responses = get_endpoints(endpoints)
-    history.append({"api-responses": responses})
+    st.session_state["history"].append({"api-responses": responses})
 
     # Final interaction based on all collected data
     final_answer, data = q1_yes_q2_api_q3(question, endpoints, responses)
-    history.append({"gpt-data": data})
+    st.session_state["history"].append({"gpt-data": data})
 
     # Append the final answer to the history
-    history.append({"answer": final_answer})
-
-    # Update chat history
-    st.session_state["history"] = history
+    st.session_state["history"].append({"answer": final_answer})
 
     return final_answer
 
