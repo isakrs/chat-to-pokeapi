@@ -13,6 +13,9 @@ A: Should answer with an API endpoint and 1302. It should also provide a url.
 Q: How many blue pokemons are there?
 A: Should be between 100-200.
 
+Q: List some blue pokemons
+A: A list of blue pokemons.
+
 Q: Give me some stats on Usain Bolt
 A: Should be answer saying that this is not a relevant question for the API
 
