@@ -143,62 +143,7 @@ def get_endpoints(endpoints):
     return responses
 
 
-def gpt_q1_yes_q2_api_q3(question, endpoints, responses):
-    """Q1.yes.Q2.api.Q3: 
-    
-    Based on the question: \n\n {question} \n\n
-    
-    and the {API_NAME} response(s): \n\n
-     
-    {(e, r)\n for e,r in zip(endpoints, responses)} \n\n
-    
-    are there any additional endpoints you would like to call? 
-    Provide the full URL of the endpoint. {API_URL} should be part of each endpoint.
-    Answer strictly with comma separated values for the endpoints to call and nothing else"""
-    data = {
-        "messages": [
-            {
-                "role": "system",
-                "content": (
-                    "You are a helpful assistant who translates natural language into API calls. "
-                    f"You are an expert on the {API_NAME}. "
-                )
-            },
-            {
-                "role": "user", 
-                "content": (
-                    f"Based on the question: \n\n {question} \n\n"
-                    f"and the {API_NAME} response(s): \n\n"
-                    f"{[(e, r) for e,r in zip(endpoints, responses)]} \n\n"
-                    "are there any additional endpoints you would like to call? "
-                    f"Provide the full URL of the endpoint. {API_URL} should be part of each endpoint. "
-                    "Answer strictly with comma separated values for the endpoints to call if yes, "
-                    "otherwise answer no-more-endpoints"
-                )
-            }
-        ]
-    }
-    response = call_api(data)
-
-    new_message = {
-        "role": "assistant",
-        "content": response["choices"][0]["message"]["content"]
-    }
-    data["messages"].append(new_message)
-
-    is_no_more_endpoints = response["choices"][0]["message"]["content"].strip().lower() == "no-more-endpoints"
-    if is_no_more_endpoints:
-        return [], data
-    
-    endpoints = response["choices"][0]["message"]["content"].split(',')
-
-    # TODO: check if response is valid. if not, append system's answer to data messages and ask one more time for a valid answer.
-    # API_URL should be in each endpoint.
-
-    return endpoints, data
-
-
-def q1_yes_q2_api_q3_api_q4(question, endpoints, responses):
+def q1_yes_q2_api_q3(question, endpoints, responses):
     """Based on the user's original question:
     \n\n {question} \n\n
     and the response(s) from pokeAPI:
@@ -263,17 +208,8 @@ def handle_query(question):
     responses = get_endpoints(endpoints)
     history.append({"api-responses": responses})
 
-    # # Check if additional endpoints are needed after initial response
-    # additional_endpoints, data = gpt_q1_yes_q2_api_q3(question, endpoints, responses)
-    # history.append({"gpt-data": data})
-    # if additional_endpoints:
-    #     more_responses = get_endpoints(additional_endpoints)
-    #     history.append({"api-responses": more_responses})
-    #     endpoints.extend(additional_endpoints) # Append additional endpoints
-    #     responses.extend(more_responses)  # Append additional responses
-
     # Final interaction based on all collected data
-    final_answer, data = q1_yes_q2_api_q3_api_q4(question, endpoints, responses)
+    final_answer, data = q1_yes_q2_api_q3(question, endpoints, responses)
     history.append({"gpt-data": data})
 
     # Append the final answer to the history
