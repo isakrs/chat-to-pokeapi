@@ -98,7 +98,27 @@ def gpt_q1_no_q2(question):
 
 
 def gpt_q1_yes_q2(question):
-    """Q1.yes.Q2: List all the {API_NAME} endpoints you would like to call in order to answer the question."""
+    """Q1.yes.Q2: For this question:
+
+    \n\n {question} \n\n
+
+    Please provide the {API_NAME} endpoints I should use. 
+    Also, for each endpoint say where in the response body I should look as a schema. 
+    I need to know keys and lists. It should have a structure like this:
+
+    [
+        {
+            "endpoint" : endpoint-url,
+            "response-keys" : [
+                "key1",
+                "key10".[]."key3".[]."key5",
+                ...
+            ]
+        },
+        ...
+    ]
+
+    You answer strictly with this requested JSON"""
     data = {
         "messages": [
             {
@@ -111,16 +131,40 @@ def gpt_q1_yes_q2(question):
             {
                 "role": "user", 
                 "content": (
-                    f"List all the {API_NAME} endpoints you would like to call in order to answer the question. "
-                    f"Question: \n\n {question} \n\n. "
-                    f"Provide the full URL of the endpoint. {API_URL} should be part of each endpoint. "
-                    "Answer strictly with comma separated values for the endpoints to call and nothing else"
+                    "For this question:\n\n" 
+                    f"{question}\n\n"
+                    f"Please provide the {API_NAME} endpoints I should use. "
+                    "Also, for each endpoint say where in the response body I should look as a schema. "
+                    "I need to know keys and lists. It should have a structure like this:\n\n"
+                    "[\n"
+                    "    {\n"
+                    '        "endpoint" : "endpoint-url",\n'
+                    '        "response-keys" : [\n'
+                    '            "key1",\n'
+                    '            "key10.[].key3.[].key5",\n'
+                    '            "..." \n'
+                    '        ]\n'
+                    "    },\n"
+                    "    ...\n"
+                    "]\n\n"
+                    "You answer strictly with this requested JSON and nothing else"
                 )
             }
         ]
     }
+
+
     response = call_api(data)
-    endpoints = response["choices"][0]["message"]["content"].split(',')
+    
+    content = response["choices"][0]["message"]["content"]
+
+    try:
+        content = json.loads(content)
+        endpoints = [e["endpoint"] for e in content]
+        response_keys_list = [e["response-keys"] for e in content]
+    except KeyError:
+        # TODO: make the code more robust here and handle the error
+        raise ValueError("The response body should have 'endpoint' and 'response-keys' keys.")
 
     # TODO: check if response is valid. if not, append system's answer to data messages and ask one more time for a valid answer.
     # API_URL should be in each endpoint.
@@ -131,7 +175,7 @@ def gpt_q1_yes_q2(question):
     }
     data["messages"].append(new_message)
 
-    return endpoints, data
+    return endpoints, response_keys_list, data
 
 
 def get_endpoints(endpoints):
@@ -141,6 +185,39 @@ def get_endpoints(endpoints):
         r = requests.get(e)
         responses.append(r.json())
     return responses
+
+
+def filter_response(response, response_keys):
+    filtered_response = {}
+    for key in response_keys:
+        # Split keys on periods, which are used to navigate through the data structure
+        keys = key.split(".")
+        temp = response
+        for k in keys:
+            # Check if the current part of the key is a list index indicated by brackets '[]'
+            if '[]' in k:
+                list_key = k.split('[]')[0]
+                # Ensure we're dealing with a list and it's not an empty path to a list
+                if list_key and isinstance(temp, dict) and list_key in temp and isinstance(temp[list_key], list):
+                    # Collect all items specified by the list index key
+                    temp = [item.get(k.split('[]')[1], {}) for item in temp[list_key] if k.split('[]')[1] in item]
+                else:
+                    temp = [{}]
+            elif k.isdigit():  # Handle direct list indices
+                temp = temp[int(k)] if isinstance(temp, list) and int(k) < len(temp) else {}
+            else:  # Handle dictionary keys
+                temp = temp.get(k, {}) if isinstance(temp, dict) else {}
+        # Store the filtered result for the current key
+        filtered_response[key] = temp
+    return filtered_response
+
+
+def filter_responses(responses, response_keys_list):
+    filtered_responses = []
+    for r, keys in zip(responses, response_keys_list):
+        filtered_responses.append(filter_response(r, keys))
+    return filtered_responses
+
 
 
 def gpt_q1_yes_q2_api_q3(question, endpoints, responses):
@@ -258,22 +335,26 @@ def handle_query(question):
         return answer
 
     # Get the necessary endpoints to call if it's an API question
-    endpoints, data = gpt_q1_yes_q2(question)
+    endpoints, response_keys_list, data = gpt_q1_yes_q2(question)
     history.append({"gpt-data": data})
     responses = get_endpoints(endpoints)
     history.append({"api-responses": responses})
 
-    # Check if additional endpoints are needed after initial response
-    additional_endpoints, data = gpt_q1_yes_q2_api_q3(question, endpoints, responses)
-    history.append({"gpt-data": data})
-    if additional_endpoints:
-        more_responses = get_endpoints(additional_endpoints)
-        history.append({"api-responses": more_responses})
-        endpoints.extend(additional_endpoints) # Append additional endpoints
-        responses.extend(more_responses)  # Append additional responses
+    # Filter the responses based on the response keys
+    filtered_responses = filter_responses(responses, response_keys_list)
+    history.append({"filtered-responses": filtered_responses})
+
+    # # Check if additional endpoints are needed after initial response
+    # additional_endpoints, data = gpt_q1_yes_q2_api_q3(question, endpoints, responses)
+    # history.append({"gpt-data": data})
+    # if additional_endpoints:
+    #     more_responses = get_endpoints(additional_endpoints)
+    #     history.append({"api-responses": more_responses})
+    #     endpoints.extend(additional_endpoints) # Append additional endpoints
+    #     responses.extend(more_responses)  # Append additional responses
 
     # Final interaction based on all collected data
-    final_answer, data = q1_yes_q2_api_q3_api_q4(question, endpoints, responses)
+    final_answer, data = q1_yes_q2_api_q3_api_q4(question, endpoints, filtered_responses)
     history.append({"gpt-data": data})
 
     # Append the final answer to the history
