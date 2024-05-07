@@ -16,10 +16,14 @@ gpt_api_url = os.getenv("API_URL")
 
 
 def call_api(data):
-    headers = {"Content-Type": "application/json", "api-key": gpt_api_key}
+    data["model"] = "gpt-4-turbo-2024-04-09"
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {gpt_api_key}"
+    }
     try:
         response = requests.post(gpt_api_url, headers=headers, json=data)
-        return response.json()
+        return response
     except requests.exceptions.ConnectionError as e:
         return None
 
@@ -27,7 +31,7 @@ def call_api(data):
 def gpt_q1(question):
     """Q1: Is possible to use any information from the {API_NAME} to answer this question? 
     
-    Question: \n\n {question} \n\n. Answer yes or no."""
+    Question: \n\n {question} \n\n. Answer yes or no"""
     data = {
         "messages": [
             {
@@ -52,14 +56,16 @@ def gpt_q1(question):
     # TODO: check if response is valid. if not, append system's answer to data messages and ask one more time for a valid answer.
     
     # Error handling, no response
-    if response is None:
+    if response is None or response.status_code != 200:
         return False, data
     
-    is_api_question = response["choices"][0]["message"]["content"].strip().lower() == "yes"
+    response_body = response.json()
+    
+    is_api_question = "yes" in response_body["choices"][0]["message"]["content"].strip().lower()
 
     new_message = {
         "role": "assistant",
-        "content": response["choices"][0]["message"]["content"]
+        "content": response_body["choices"][0]["message"]["content"]
     }
     data["messages"].append(new_message)
 
@@ -100,21 +106,23 @@ def gpt_q1_no_q2(question):
     response = call_api(data)
 
     # Error handling, no response
-    if response is None:
+    if response is None or response.status_code != 200:
         answer = (
             "I'm sorry, I don't have an answer for that. "
-            "There was no response from the API. "
+            "There was no response from the GPT API. "
             "Please come back later. "
             "Thank you for your understanding."
         )
         return answer, data
+    
+    response_body = response.json()
 
     new_message = {
         "role": "assistant",
-        "content": response["choices"][0]["message"]["content"]
+        "content": response_body["choices"][0]["message"]["content"]
     }
     data["messages"].append(new_message)
-    answer = response["choices"][0]["message"]["content"]
+    answer = response_body["choices"][0]["message"]["content"]
     return answer, data
 
 
@@ -141,14 +149,15 @@ def gpt_q1_yes_q2(question):
         ]
     }
     response = call_api(data)
-    endpoints = response["choices"][0]["message"]["content"].split(',')
+    response_body = response.json()
+    endpoints = response_body["choices"][0]["message"]["content"].split(',')
 
     # TODO: check if response is valid. if not, append system's answer to data messages and ask one more time for a valid answer.
     # API_URL should be in each endpoint.
 
     new_message = {
         "role": "assistant",
-        "content": response["choices"][0]["message"]["content"]
+        "content": response_body["choices"][0]["message"]["content"]
     }
     data["messages"].append(new_message)
 
@@ -199,13 +208,14 @@ def q1_yes_q2_api_q3(question, endpoints, responses):
         ]
     }
     response = call_api(data)
+    response_body = response.json()
 
     # Error handling: the payload to GPT is too long
     # this happens when the response from the API is too long
-    if response.get("error", {}).get("code") == 'context_length_exceeded':
+    if response_body.get("error", {}).get("code") == 'rate_limit_exceeded':
         new_message = {
             "role": "assistant",
-            "content": response["error"]["message"]
+            "content": response_body["error"]["message"]
         }
         data["messages"].append(new_message)
         answer = (
@@ -219,11 +229,11 @@ def q1_yes_q2_api_q3(question, endpoints, responses):
 
     new_message = {
         "role": "assistant",
-        "content": response["choices"][0]["message"]["content"]
+        "content": response_body["choices"][0]["message"]["content"]
     }
     data["messages"].append(new_message)
 
-    answer = response["choices"][0]["message"]["content"]
+    answer = response_body["choices"][0]["message"]["content"]
 
     return answer, data
 
